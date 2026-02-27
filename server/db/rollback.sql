@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS movies;
+DROP TABLE IF EXISTS users;

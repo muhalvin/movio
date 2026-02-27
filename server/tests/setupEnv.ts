@@ -1,0 +1,11 @@
+process.env.NODE_ENV = "test";
+process.env.PORT = process.env.PORT ?? "3001";
+process.env.DATABASE_URL = process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/movies_api_test";
+process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "test_access_secret";
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? "test_refresh_secret";
+process.env.JWT_ACCESS_TTL = process.env.JWT_ACCESS_TTL ?? "15m";
+process.env.JWT_REFRESH_TTL = process.env.JWT_REFRESH_TTL ?? "7d";
+process.env.BCRYPT_ROUNDS = process.env.BCRYPT_ROUNDS ?? "4";
+process.env.CORS_ORIGIN = process.env.CORS_ORIGIN ?? "http://localhost:3000";
+process.env.RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS ?? "60000";
+process.env.RATE_LIMIT_MAX = process.env.RATE_LIMIT_MAX ?? "100";

@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-sand text-ink font-sans;
+    min-height: 100vh;
+    background-image: radial-gradient(circle at top, #fff6ef 0%, #f2efe8 40%, #eef1ef 100%);
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-black/5 shadow-soft;
+  }
+  .chip {
+    @apply rounded-full px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold transition duration-200;
+  }
+  .btn-primary {
+    @apply bg-accent text-white shadow-lg shadow-orange-200/70 hover:-translate-y-0.5;
+  }
+  .btn-ghost {
+    @apply border border-black/10 text-navy hover:bg-black/5;
+  }
+  .card {
+    @apply rounded-2xl border border-black/5 bg-white shadow-sm;
+  }
+  .chip-outline {
+    @apply rounded-full border border-black/10 bg-white px-2 py-1 text-[11px] text-black/60;
+  }
+}
+
+@layer base {
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    @apply bg-black/5 text-black/40 cursor-not-allowed;
+  }
+}
+
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(transparent 95%, rgba(0, 0, 0, 0.04) 96%),
+    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.04) 96%);
+  background-size: 80px 80px;
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-gradient {
+  background: linear-gradient(120deg, rgba(255, 237, 213, 0.8) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(216, 226, 207, 0.7) 100%);
+}
+
+.shadow-float {
+  box-shadow: 0 24px 60px rgba(31, 42, 68, 0.15);
+}

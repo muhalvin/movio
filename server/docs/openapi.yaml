@@ -1,0 +1,1154 @@
+openapi: 3.0.3
+info:
+  title: Movie Review API
+  version: 1.0.0
+  description: |
+    REST API for managing movies and reviews with JWT auth.
+    All responses use a `{ success, data }` or `{ success, error }` envelope.
+servers:
+  - url: /
+tags:
+  - name: Health
+  - name: Auth
+  - name: Movies
+  - name: Reviews
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 123
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        username:
+          type: string
+          nullable: true
+          example: moviefan
+        role:
+          type: string
+          enum: [USER, ADMIN]
+          example: USER
+      required: [id, email, role]
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access.payload
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.payload
+      required: [accessToken, refreshToken]
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/User"
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+          required: [user, accessToken, refreshToken]
+      required: [success, data]
+    Movie:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 42
+        title:
+          type: string
+          example: Arrival
+        description:
+          type: string
+          nullable: true
+          example: A linguist is recruited to communicate with extraterrestrials.
+        release_date:
+          type: string
+          format: date
+          example: 2016-11-11
+        genres:
+          type: array
+          items:
+            type: string
+          example: [Sci-Fi, Drama]
+        average_rating:
+          type: number
+          format: float
+          example: 4.35
+        review_count:
+          type: integer
+          example: 120
+        created_by:
+          type: integer
+          format: int64
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: 2026-02-26T21:15:10.123Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2026-02-26T21:15:10.123Z
+      required:
+        - id
+        - title
+        - release_date
+        - genres
+        - average_rating
+        - review_count
+        - created_by
+        - created_at
+        - updated_at
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 99
+        user_id:
+          type: integer
+          format: int64
+          example: 123
+        movie_id:
+          type: integer
+          format: int64
+          example: 42
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          nullable: true
+          example: Absolutely stunning.
+        created_at:
+          type: string
+          format: date-time
+          example: 2026-02-26T21:30:00.000Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2026-02-26T21:30:00.000Z
+      required:
+        - id
+        - user_id
+        - movie_id
+        - rating
+        - created_at
+        - updated_at
+    PaginatedMovies:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Movie"
+        total:
+          type: integer
+          example: 250
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+      required: [items, total, page, limit]
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Logged out
+      required: [message]
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - UNAUTHORIZED
+                - FORBIDDEN
+                - NOT_FOUND
+                - CONFLICT
+                - RATE_LIMITED
+                - INTERNAL_ERROR
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Validation failed
+            details:
+              description: Optional structured validation details.
+              nullable: true
+          required: [code, message]
+      required: [success, error]
+  responses:
+    ErrorResponse:
+      description: Error response envelope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: INTERNAL_ERROR
+              message: Internal server error
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: UNAUTHORIZED
+              message: Invalid or expired token
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: FORBIDDEN
+              message: Insufficient permissions
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: NOT_FOUND
+              message: Resource not found
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: VALIDATION_ERROR
+              message: Validation failed
+              details:
+                fieldErrors:
+                  email:
+                    - Invalid email
+  examples:
+    RateLimited:
+      value:
+        success: false
+        error:
+          code: RATE_LIMITED
+          message: Too many requests
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: ok
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  status: ok
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 32
+              required: [email, password]
+            example:
+              email: user@example.com
+              password: "StrongPassw0rd!"
+              username: moviefan
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                success: true
+                data:
+                  user:
+                    id: 123
+                    email: user@example.com
+                    username: moviefan
+                    role: USER
+                  accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access.payload
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.payload
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          description: Email or username already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: CONFLICT
+                  message: Email is already in use
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+              required: [email, password]
+            example:
+              email: user@example.com
+              password: "StrongPassw0rd!"
+      responses:
+        "200":
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                success: true
+                data:
+                  user:
+                    id: 123
+                    email: user@example.com
+                    username: moviefan
+                    role: USER
+                  accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access.payload
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.payload
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  minLength: 10
+              required: [refreshToken]
+            example:
+              refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.payload
+            example:
+              refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.payload
+      responses:
+        "200":
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                success: true
+                data:
+                  user:
+                    id: 123
+                    email: user@example.com
+                    username: moviefan
+                    role: USER
+                  accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access.payload
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.payload
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout a single session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  minLength: 10
+              required: [refreshToken]
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/SuccessMessage"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  message: Logged out
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/auth/logout-all:
+    post:
+      tags: [Auth]
+      summary: Logout all sessions for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out of all sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/SuccessMessage"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  message: Logged out of all sessions
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/movies:
+    get:
+      tags: [Movies]
+      summary: List movies
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number (default 1)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Page size (default 10)
+        - in: query
+          name: q
+          schema:
+            type: string
+            maxLength: 200
+          description: Case-insensitive title search
+        - in: query
+          name: genre
+          schema:
+            type: string
+            maxLength: 50
+          description: Filter by genre
+        - in: query
+          name: releaseYear
+          schema:
+            type: integer
+            minimum: 1888
+            maximum: 2100
+          description: Filter by release year
+      responses:
+        "200":
+          description: Paginated movie list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/PaginatedMovies"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  items:
+                    - id: 42
+                      title: Arrival
+                      description: A linguist is recruited to communicate with extraterrestrials.
+                      release_date: 2016-11-11
+                      genres: [Sci-Fi, Drama]
+                      average_rating: 4.35
+                      review_count: 120
+                      created_by: 1
+                      created_at: 2026-02-26T21:15:10.123Z
+                      updated_at: 2026-02-26T21:15:10.123Z
+                  total: 250
+                  page: 1
+                  limit: 10
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+    post:
+      tags: [Movies]
+      summary: Create a movie (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 2000
+                  nullable: true
+                releaseDate:
+                  type: string
+                  pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+                  description: YYYY-MM-DD
+                genres:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 50
+            example:
+              title: Arrival (Director's Cut)
+              description: Updated description.
+              releaseDate: 2016-11-11
+              genres: [Sci-Fi, Drama]
+              required: [title, releaseDate, genres]
+            example:
+              title: Arrival
+              description: A linguist is recruited to communicate with extraterrestrials.
+              releaseDate: 2016-11-11
+              genres: [Sci-Fi, Drama]
+      responses:
+        "201":
+          description: Movie created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Movie"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 42
+                  title: Arrival
+                  description: A linguist is recruited to communicate with extraterrestrials.
+                  release_date: 2016-11-11
+                  genres: [Sci-Fi, Drama]
+                  average_rating: 0
+                  review_count: 0
+                  created_by: 1
+                  created_at: 2026-02-26T21:15:10.123Z
+                  updated_at: 2026-02-26T21:15:10.123Z
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/movies/{id}:
+    get:
+      tags: [Movies]
+      summary: Get movie by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Movie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Movie"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 42
+                  title: Arrival
+                  description: A linguist is recruited to communicate with extraterrestrials.
+                  release_date: 2016-11-11
+                  genres: [Sci-Fi, Drama]
+                  average_rating: 4.35
+                  review_count: 120
+                  created_by: 1
+                  created_at: 2026-02-26T21:15:10.123Z
+                  updated_at: 2026-02-26T21:15:10.123Z
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+    put:
+      tags: [Movies]
+      summary: Update movie (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 2000
+                  nullable: true
+                releaseDate:
+                  type: string
+                  pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+                  description: YYYY-MM-DD
+                genres:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 50
+      responses:
+        "200":
+          description: Movie updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Movie"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 42
+                  title: Arrival (Director's Cut)
+                  description: Updated description.
+                  release_date: 2016-11-11
+                  genres: [Sci-Fi, Drama]
+                  average_rating: 4.35
+                  review_count: 120
+                  created_by: 1
+                  created_at: 2026-02-26T21:15:10.123Z
+                  updated_at: 2026-02-27T12:00:00.000Z
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+    delete:
+      tags: [Movies]
+      summary: Delete movie (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Movie deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Movie"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 42
+                  title: Arrival
+                  description: A linguist is recruited to communicate with extraterrestrials.
+                  release_date: 2016-11-11
+                  genres: [Sci-Fi, Drama]
+                  average_rating: 4.35
+                  review_count: 120
+                  created_by: 1
+                  created_at: 2026-02-26T21:15:10.123Z
+                  updated_at: 2026-02-26T21:15:10.123Z
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/reviews/movie/{movieId}:
+    get:
+      tags: [Reviews]
+      summary: List reviews for a movie
+      parameters:
+        - in: path
+          name: movieId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Reviews list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Review"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  - id: 99
+                    user_id: 123
+                    movie_id: 42
+                    rating: 5
+                    comment: Absolutely stunning.
+                    created_at: 2026-02-26T21:30:00.000Z
+                    updated_at: 2026-02-26T21:30:00.000Z
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/reviews:
+    post:
+      tags: [Reviews]
+      summary: Create a review
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: integer
+                  minimum: 1
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  maxLength: 2000
+                  nullable: true
+              required: [movieId, rating]
+            example:
+              movieId: 42
+              rating: 5
+              comment: Absolutely stunning.
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Review"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 99
+                  user_id: 123
+                  movie_id: 42
+                  rating: 5
+                  comment: Absolutely stunning.
+                  created_at: 2026-02-26T21:30:00.000Z
+                  updated_at: 2026-02-26T21:30:00.000Z
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Duplicate review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: CONFLICT
+                  message: You already reviewed this movie
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+  /api/reviews/{id}:
+    put:
+      tags: [Reviews]
+      summary: Update a review
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  maxLength: 2000
+                  nullable: true
+            example:
+              rating: 4
+              comment: Great on rewatch.
+      responses:
+        "200":
+          description: Review updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Review"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 99
+                  user_id: 123
+                  movie_id: 42
+                  rating: 4
+                  comment: Great on rewatch.
+                  created_at: 2026-02-26T21:30:00.000Z
+                  updated_at: 2026-02-27T12:05:00.000Z
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
+    delete:
+      tags: [Reviews]
+      summary: Delete a review
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Review deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Review"
+                required: [success, data]
+              example:
+                success: true
+                data:
+                  id: 99
+                  user_id: 123
+                  movie_id: 42
+                  rating: 5
+                  comment: Absolutely stunning.
+                  created_at: 2026-02-26T21:30:00.000Z
+                  updated_at: 2026-02-26T21:30:00.000Z
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  $ref: "#/components/examples/RateLimited"
