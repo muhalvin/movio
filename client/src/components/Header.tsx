@@ -9,7 +9,14 @@ type HeaderProps = {
   onOpenAdmin: () => void;
 };
 
-const Header = ({ user, isAdmin, isAdminLoading, onSignIn, onSignOut, onOpenAdmin }: HeaderProps) => {
+const Header = ({
+  user,
+  isAdmin,
+  isAdminLoading,
+  onSignIn,
+  onSignOut,
+  onOpenAdmin,
+}: HeaderProps) => {
   return (
     <header className="sticky top-0 z-20 bg-sand/70 backdrop-blur-2xl border-b border-black/5">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
@@ -18,7 +25,7 @@ const Header = ({ user, isAdmin, isAdminLoading, onSignIn, onSignOut, onOpenAdmi
             M
           </div>
           <div>
-            <div className="text-lg font-semibold">Movieo</div>
+            <div className="text-lg font-semibold">Movio</div>
             <div className="text-xs text-black/50">Review engine</div>
           </div>
         </div>
@@ -36,7 +43,11 @@ const Header = ({ user, isAdmin, isAdminLoading, onSignIn, onSignOut, onOpenAdmi
             </button>
           )}
           {isAdmin && (
-            <button className="btn btn-primary" disabled={isAdminLoading} onClick={onOpenAdmin}>
+            <button
+              className="btn btn-primary"
+              disabled={isAdminLoading}
+              onClick={onOpenAdmin}
+            >
               Admin tools
             </button>
           )}
